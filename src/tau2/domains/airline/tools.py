@@ -1,7 +1,7 @@
 """Toolkit for the airline reservation system."""
 
 from copy import deepcopy
-from typing import List, Optional
+from typing import List, Optional, Literal
 
 from loguru import logger
 
@@ -718,7 +718,7 @@ class AirlineTools(ToolKitBase):  # Tools
         return reservation
 
     @is_tool(ToolType.READ)
-    def get_flight_status(self, flight_number: str, date: str) -> str:
+    def get_flight_status(self, flight_number: str, date: str) -> Literal["available", "on time", "flying", "cancelled", "delayed", "landed"]:
         """
         Get the status of a flight.
 
@@ -734,6 +734,40 @@ class AirlineTools(ToolKitBase):  # Tools
         """
         return self._get_flight_instance(flight_number, date).status
 
+
+    @is_tool(ToolType.READ)
+    def get_flight_instance(self, flight_number: str, date: str) -> FlightDateStatus:
+        """
+        Get the flight.
+
+        Args:
+            flight_number: The flight number.
+            date: The date of the flight.
+
+        Returns:
+            The flight.
+
+        Raises:
+            ValueError: If the flight is not found.
+        """
+        return self._get_flight_instance(flight_number, date)
+
+
+    @is_tool(ToolType.READ)
+    def get_scheduled_flight(self, flight_number: str) -> Flight:
+        """
+        Get the flight schedule.
+
+        Args:
+            flight_number: The flight number.
+
+        Returns:
+            The flight schedule
+
+        Raises:
+            ValueError: If the flight is not found.
+        """
+        return self._get_flight(flight_number)
 
 if __name__ == "__main__":
     from tau2.domains.airline.utils import AIRLINE_DB_PATH

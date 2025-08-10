@@ -6,9 +6,13 @@ from pydantic import BaseModel
 
 from tau2.agent.base import BaseAgent
 from tau2.agent.llm_agent import LLMAgent, LLMGTAgent, LLMSoloAgent
+from tau2.agent.remote_collie_agent import RemoteCollieAgent
 from tau2.data_model.tasks import Task
 from tau2.domains.airline.environment import (
     get_environment as airline_domain_get_environment,
+)
+from tau2.domains.airline.guarded_environment import (
+    get_guarded_environment as airline_domain_get_guarded_environment,
 )
 from tau2.domains.airline.environment import get_tasks as airline_domain_get_tasks
 from tau2.domains.mock.environment import get_environment as mock_domain_get_environment
@@ -177,10 +181,16 @@ try:
     registry.register_agent(LLMAgent, "llm_agent")
     registry.register_agent(LLMGTAgent, "llm_agent_gt")
     registry.register_agent(LLMSoloAgent, "llm_agent_solo")
+    # registry.register_agent(ToolguardAgent, "toolguard_agent")
+    registry.register_agent(RemoteCollieAgent, "remote_collie")
     registry.register_domain(mock_domain_get_environment, "mock")
     registry.register_tasks(mock_domain_get_tasks, "mock")
     registry.register_domain(airline_domain_get_environment, "airline")
     registry.register_tasks(airline_domain_get_tasks, "airline")
+    
+    registry.register_domain(airline_domain_get_guarded_environment, "g_airline")
+    registry.register_tasks(airline_domain_get_tasks, "g_airline")
+    
     registry.register_domain(retail_domain_get_environment, "retail")
     registry.register_tasks(retail_domain_get_tasks, "retail")
     registry.register_domain(telecom_domain_get_environment_manual_policy, "telecom")

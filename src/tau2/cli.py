@@ -1,4 +1,7 @@
 import argparse
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from tau2.config import (
     DEFAULT_AGENT_IMPLEMENTATION,

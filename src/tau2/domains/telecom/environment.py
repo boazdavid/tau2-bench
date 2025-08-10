@@ -156,7 +156,14 @@ def load_tasks(path: str) -> list[Task]:
     tasks = load_file(path)
     if isinstance(tasks, dict) and "tasks" in tasks:
         tasks = tasks["tasks"]
-    return [Task.model_validate(task) for task in tasks]
+    tasks = [Task.model_validate(task) for task in tasks]
+    
+    #Workaround to evaluate collie
+    for task in tasks:
+        if task.evaluation_criteria and task.evaluation_criteria.actions:
+            task.evaluation_criteria.actions = [act for act in task.evaluation_criteria.actions if act.requestor != "assistant"]
+
+    return tasks
 
 
 def get_tasks_full() -> list[Task]:

@@ -1,4 +1,5 @@
 import json
+import re
 
 from tau2.config import DEFAULT_LLM_NL_ASSERTIONS, DEFAULT_LLM_NL_ASSERTIONS_ARGS
 from tau2.data_model.message import Message, SystemMessage, UserMessage
@@ -117,7 +118,14 @@ class NLAssertionsEvaluator:
             messages=messages,
             **DEFAULT_LLM_NL_ASSERTIONS_ARGS,
         )
-        result_data = json.loads(assistant_message.content)
+        match = re.search(r"```json\n(.*?)\n```", assistant_message.content, re.DOTALL)
+        json_str = assistant_message.content
+        if match:
+            json_str = match.group(1)
+
+        # Parse JSON
+        result_data = json.loads(json_str)
+        # result_data = json.loads(assistant_message.content)
         return [
             NLAssertionCheck(
                 nl_assertion=result["expectedOutcome"],

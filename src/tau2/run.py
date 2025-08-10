@@ -1,5 +1,6 @@
 import json
 import multiprocessing
+import os
 import random
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -8,6 +9,7 @@ from typing import Optional
 from loguru import logger
 
 from tau2.agent.llm_agent import LLMAgent, LLMGTAgent, LLMSoloAgent
+from tau2.agent.remote_collie_agent import RemoteCollieAgent
 from tau2.data_model.simulation import (
     AgentInfo,
     Info,
@@ -135,7 +137,7 @@ def run_domain(config: RunConfig) -> Results:
         max_errors=config.max_errors,
         save_to=save_to,
         console_display=True,
-        evaluation_type=EvaluationType.ALL,
+        evaluation_type=EvaluationType.ALL, #HERE
         max_concurrency=config.max_concurrency,
         seed=config.seed,
         log_level=config.log_level,
@@ -409,39 +411,8 @@ def run_task(
     )
     environment_constructor = registry.get_env_constructor(domain)
     environment = environment_constructor()
-    AgentConstructor = registry.get_agent_constructor(agent)
-
     solo_mode = False
-    if issubclass(AgentConstructor, LLMAgent):
-        agent = AgentConstructor(
-            tools=environment.get_tools(),
-            domain_policy=environment.get_policy(),
-            llm=llm_agent,
-            llm_args=llm_args_agent,
-        )
-    elif issubclass(AgentConstructor, LLMGTAgent):
-        agent = AgentConstructor(
-            tools=environment.get_tools(),
-            domain_policy=environment.get_policy(),
-            llm=llm_agent,
-            llm_args=llm_args_agent,
-            task=task,
-        )
-    elif issubclass(AgentConstructor, LLMSoloAgent):
-        solo_mode = True
-        environment: Environment = environment_constructor(solo_mode=True)
-        user_tools = environment.get_user_tools() if environment.user_tools else []
-        agent = AgentConstructor(
-            tools=environment.get_tools() + user_tools,
-            domain_policy=environment.get_policy(),
-            llm=llm_agent,
-            llm_args=llm_args_agent,
-            task=task,
-        )
-    else:
-        raise ValueError(
-            f"Unknown agent type: {AgentConstructor}. Should be LLMAgent or LLMSoloAgent"
-        )
+    the_agent = construct_agent(agent, environment, llm_agent, llm_args_agent, task)
     try:
         user_tools = environment.get_user_tools()
     except Exception:
@@ -449,7 +420,7 @@ def run_task(
 
     UserConstructor = registry.get_user_constructor(user)
     if issubclass(UserConstructor, DummyUser):
-        assert isinstance(agent, LLMSoloAgent), (
+        assert isinstance(the_agent, LLMSoloAgent), (
             "Dummy user can only be used with solo agent"
         )
 
@@ -462,7 +433,7 @@ def run_task(
 
     orchestrator = Orchestrator(
         domain=domain,
-        agent=agent,
+        agent=the_agent,
         user=user,
         environment=environment,
         task=task,
@@ -488,6 +459,41 @@ def run_task(
     )
     return simulation
 
+def construct_agent(agent:str, environment:Environment, llm_agent:str, llm_args_agent: dict, task: Task):
+    if agent == "remote_collie":
+        return RemoteCollieAgent(server_url=os.getenv("COLLIE_SERVER_URL"))
+    
+    AgentConstructor = registry.get_agent_constructor(agent)
+    if issubclass(AgentConstructor, LLMAgent):
+        return AgentConstructor(
+            tools=environment.get_tools(),
+            domain_policy=environment.get_policy(),
+            llm=llm_agent,
+            llm_args=llm_args_agent,
+        )
+    elif issubclass(AgentConstructor, LLMGTAgent):
+        return AgentConstructor(
+            tools=environment.get_tools(),
+            domain_policy=environment.get_policy(),
+            llm=llm_agent,
+            llm_args=llm_args_agent,
+            task=task,
+        )
+    elif issubclass(AgentConstructor, LLMSoloAgent):
+        solo_mode = True
+        environment: Environment = environment_constructor(solo_mode=True)
+        user_tools = environment.get_user_tools() if environment.user_tools else []
+        return AgentConstructor(
+            tools=environment.get_tools() + user_tools,
+            domain_policy=environment.get_policy(),
+            llm=llm_agent,
+            llm_args=llm_args_agent,
+            task=task,
+        )
+    else:
+        raise ValueError(
+            f"Unknown agent type: {AgentConstructor}. Should be LLMAgent or LLMSoloAgent"
+        )
 
 def get_info(
     domain: str,
