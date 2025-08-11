@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 
 from tau2.domains.airline.data_model import FlightDB
@@ -16,9 +17,11 @@ def get_guarded_environment(
         db = FlightDB.load(AIRLINE_DB_PATH)
     tools = AirlineTools(db)
     
-    guards_path = "../gen_policy_validator/eval/airline/GT_tau2" #TODO env var
-    llm = Litellm("bla", "azure") #TODO env var
-    tools = guard_methods(tools, guards_path, llm)
+    # guards_path = "../gen_policy_validator/eval/airline/GT_tau2" #TODO env var
+    guards_path = os.getenv("TOOLGUARDS_PATH")
+    if guards_path:
+        llm = Litellm("bla", "azure") #TODO env var
+        tools = guard_methods(tools, guards_path, llm)
 
     with open(AIRLINE_POLICY_PATH, "r") as fp:
         policy = fp.read()
