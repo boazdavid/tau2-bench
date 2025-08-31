@@ -29,6 +29,8 @@ from tau2.utils.display import ConsoleDisplay, Text
 from tau2.utils.pydantic_utils import get_pydantic_hash
 from tau2.utils.utils import DATA_DIR, get_commit_hash, get_now, show_dict_diff
 
+import litellm
+litellm._turn_on_debug() # type: ignore
 
 def get_options() -> RegistryInfo:
     """
